@@ -1,0 +1,48 @@
+name: Test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-basic:
+    runs-on: ubuntu-latest
+    outputs:
+      supported_infix: ${{ steps.check_infix.outputs.supported }}
+      supported_div: ${{ steps.check_div.outputs.supported }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: ./scripts/build.sh
+      - name: Test basic scenario
+        run: ./scripts/test.sh
+        timeout-minutes: 1
+      - name: Check infix notation supported
+        id: check_infix
+        run: ./scripts/check_infix.sh >> "$GITHUB_OUTPUT"
+      - name: Check division supported
+        id: check_div
+        run: ./scripts/check_div.sh >> "$GITHUB_OUTPUT"
+  test-infix:
+    runs-on: ubuntu-latest
+    needs: test-basic
+    if: needs.test-basic.outputs.supported_infix == 'yes'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: ./scripts/build.sh
+      - name: Test infix notation
+        run: ./scripts/test_infix.sh
+        timeout-minutes: 1
+  test-div:
+    runs-on: ubuntu-latest
+    needs: test-basic
+    if: needs.test-basic.outputs.supported_div == 'yes'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: ./scripts/build.sh
+      - name: Test division
+        run: ./scripts/test_div.sh
+        timeout-minutes: 1
